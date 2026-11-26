@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c3326">
+<title>Spades Scorecard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%A0%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Bodoni:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a card table at home — warm, quick, thumb-first, no fuss.
+   IDEA: each side's score is a playing card laid on green felt.
+   PICTURE: ivory card faces with corner suit pips, big Bodoni numerals.
+   COLOUR and TYPE: felt green field, ivory cards, card red accent; Libre Bodoni numerals + DM Sans.
+   LAYOUT: title, score cards, deal line, big action button, round ledger; bottom-sheet keypad. */
+:root{color-scheme:dark;--felt:#0f3d2e;--felt2:#0a2a20;--felt3:#145240;--card:#f6f1e4;--cardink:#16130f;--red:#c8312b;--ink:#f3efe4;--mute:#a9c2b6;--line:rgba(255,255,255,.12);--good:#7fe0a4;--bad:#ff8a80}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:radial-gradient(130% 70% at 50% 0%,var(--felt3) 0%,var(--felt) 45%,var(--felt2) 100%) fixed var(--felt2);color:var(--ink);font:16px/1.4 "DM Sans",system-ui,sans-serif;min-height:100vh;overflow-x:clip;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid #ffe08a;outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{max-width:640px;margin:0 auto;padding:14px 14px 40px}
+header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+h1{font:700 30px/1.05 "Libre Bodoni",Georgia,serif;margin:0;flex:1;letter-spacing:.01em}
+.mode{color:var(--mute);font-size:14px;margin:0 2px 14px}
+.tb{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.22);font-weight:500}
+.teams{display:grid;grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));gap:12px}
+.pc{position:relative;background:var(--card);color:var(--cardink);border-radius:14px;padding:16px 12px 14px;box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 10px 24px rgba(0,0,0,.35),0 2px 4px rgba(0,0,0,.3);transition:transform .25s}
+.pc.lead{transform:translateY(-4px) rotate(-.6deg)}
+.pip{position:absolute;font:700 18px/1 "Libre Bodoni",serif;color:var(--c)}
+.pip.tl{top:8px;left:10px}.pip.br{bottom:8px;right:10px;transform:rotate(180deg)}
+.tname{font-weight:700;font-size:16px;color:var(--c);padding:0 16px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tpl{font-size:13px;color:#6b645a;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score{font:700 clamp(40px,12vw,64px)/1 "Libre Bodoni",serif;text-align:center;margin:8px 0 6px;font-variant-numeric:tabular-nums;color:var(--c)}
+.c3 .score{font-size:clamp(32px,9vw,54px)}
+.bags{display:flex;flex-wrap:wrap;justify-content:center;gap:3px;align-items:center}
+.bag{width:9px;height:9px;border-radius:50%;border:1.5px solid #b9b0a2}
+.bag.on{background:var(--c);border-color:var(--c)}
+.bagt,.need{font-size:13px;color:#6b645a;text-align:center;margin-top:4px}
+.crown{display:none;font-size:13px;font-weight:700;text-align:center;color:var(--c);margin-top:4px}
+.pc.lead .crown{display:block}
+.deal{display:flex;justify-content:space-between;gap:6px 10px;flex-wrap:wrap;margin:18px 2px 10px;color:var(--mute);font-size:14px}
+.deal b{color:var(--ink)}
+.go{width:100%;min-height:58px;border:0;border-radius:16px;background:var(--card);color:var(--cardink);font-weight:700;font-size:18px;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.go.red{background:var(--red);color:#fff}
+.panel{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:12px 0}
+.panel h3{margin:0 0 8px;font-size:15px;font-weight:700}
+.pb{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:14px}
+.pb div{overflow:hidden;text-overflow:ellipsis}
+.win{background:var(--card);color:var(--cardink);border-radius:16px;padding:16px;text-align:center;margin:14px 0;animation:pop .5s ease}
+.win h2{font:700 30px/1.1 "Libre Bodoni",serif;margin:0 0 4px}
+.win button{margin-top:10px}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;table-layout:fixed}
+.ledger{margin-top:18px}
+.ledger h3{font-size:15px;margin:0;color:var(--mute);font-weight:500}
+.ledger p{font-size:13px;color:var(--mute);margin:2px 0 6px}
+th{font-size:13px;color:var(--mute);font-weight:500;text-align:right;padding:6px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+th:first-child,td:first-child{text-align:left;width:34px}
+td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+tbody tr{cursor:pointer}
+tbody tr:active{background:rgba(255,255,255,.06)}
+td small{display:block;color:var(--mute);font-size:13px;overflow:hidden;text-overflow:ellipsis}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.tot{font-weight:700;font-size:17px}
+.empty{color:var(--mute);text-align:center!important;padding:22px 8px;font-size:14px;white-space:normal}
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:10}
+.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:640px;max-height:94vh;overflow:auto;background:#123a2d;border-radius:20px 20px 0 0;border:1px solid var(--line);border-bottom:0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .25s ease;z-index:11}
+.sheet.on{transform:none}
+.sh{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sh h2{flex:1;margin:0;font:700 22px "Libre Bodoni",serif}
+.rows{display:grid;gap:6px}
+.rhead,.prow{display:grid;grid-template-columns:minmax(0,1fr) 84px 84px;gap:8px;align-items:center}
+.rhead{font-size:13px;color:var(--mute);text-align:center}
+.rhead span:first-child{text-align:left}
+.prow{padding:6px 8px;border-radius:12px;background:rgba(0,0,0,.2);border-left:5px solid var(--c)}
+.pn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pn small{display:block;font-weight:400;color:var(--mute);font-size:13px}
+.dl{display:inline-block;font-style:normal;font-size:12px;background:var(--card);color:var(--cardink);border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:2px}
+.cell{min-height:48px;border-radius:10px;border:2px solid transparent;background:rgba(255,255,255,.08);font-weight:700;font-size:18px}
+.cell.act{border-color:#ffe08a;background:rgba(255,224,138,.14)}
+.cell.nil{font-size:14px}
+.sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0;font-size:14px}
+.sum div{background:rgba(0,0,0,.2);border-radius:10px;padding:8px 10px;border-top:3px solid var(--c);overflow:hidden;text-overflow:ellipsis}
+.sum b{font-size:16px}
+.tc{text-align:center;font-size:14px;margin:4px 0 8px;color:var(--mute)}
+.tc.bad{color:var(--bad)}.tc.ok{color:var(--good)}
+.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:8px 0 12px}
+.kp button{min-height:50px;border-radius:12px;border:0;background:var(--card);color:var(--cardink);font-size:20px;font-weight:700}
+.kp button.alt{background:rgba(255,255,255,.14);color:var(--ink);font-size:15px}
+.kp button.nilk{background:var(--red);color:#fff;font-size:15px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts button{flex:1 1 120px;min-height:52px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);font-weight:700}
+.acts .pri{background:var(--card);color:var(--cardink);border:0}
+.acts .dang{color:var(--bad)}
+.acts button:disabled{opacity:.4;cursor:not-allowed}
+.kl{font-size:13px;color:var(--mute);text-align:center}
+/* setup */
+.fs{display:grid;gap:10px}
+.fs label{display:grid;gap:4px;font-size:13px;color:var(--mute)}
+.fs input[type=text],.fs input[type=number],.fs select{min-height:46px;border-radius:10px;border:1px solid var(--line);background:#0d2f24;padding:0 12px;font-size:16px;color:var(--ink)}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.seat{border-left:5px solid var(--c);padding-left:8px}
+.tog{display:flex!important;align-items:center;gap:10px;font-size:15px!important;color:var(--ink)!important;min-height:44px}
+.tog input{width:22px;height:22px;accent-color:var(--red);flex:none}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:0}
+legend{padding:0 6px;font-weight:700;color:var(--ink)}
+.note{font-size:13px;color:var(--mute);margin:8px 0 0}
+details{font-size:14px;color:var(--mute);margin-top:6px}
+details summary{cursor:pointer;color:var(--ink);min-height:36px;display:flex;align-items:center}
+details li{margin:4px 0}
+.modal{position:fixed;inset:0;display:none;place-items:center;z-index:20;background:rgba(0,0,0,.6);padding:20px}
+.modal.on{display:grid}
+.modal .box{background:var(--card);color:var(--cardink);border-radius:16px;padding:18px;max-width:340px;width:100%;text-align:center}
+.modal p{margin:0 0 14px;font-weight:500}
+.modal .acts button{border:1px solid #d6cfc1;background:#fff;color:var(--cardink)}
+.modal .acts .pri{background:var(--red);color:#fff;border:0}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media(max-width:400px){.rhead,.prow{grid-template-columns:minmax(0,1fr) 70px 70px}h1{font-size:26px}.c3 .pc{padding:14px 8px 12px}.c3 .pip{font-size:14px}.c3 .tname{padding:0 10px;font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Spades</h1>
+    <button class="tb" id="bSetup">Setup</button>
+    <button class="tb" id="bNew">New game</button>
+  </header>
+  <div class="mode" id="modeLine"></div>
+  <section class="teams" id="teams"></section>
+  <div id="winBox"></div>
+  <div class="deal" id="deal"></div>
+  <div id="pending"></div>
+  <button class="go" id="go"></button>
+  <section class="ledger">
+    <h3>Rounds — tap one to fix it</h3>
+    <p>Each cell: running total, then that round's points · bid / took</p>
+    <table>
+      <thead id="lh"></thead>
+      <tbody id="lb"></tbody>
+    </table>
+  </section>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="rSheet" role="dialog" aria-label="Round entry">
+  <div class="sh"><h2 id="rTitle">Round</h2><button class="tb" id="rClose">Close</button></div>
+  <div class="rows" id="rRows"></div>
+  <div class="sum" id="rSum"></div>
+  <div class="tc" id="rTc"></div>
+  <div class="kl" id="kLabel"></div>
+  <div class="kp" id="kp"></div>
+  <div class="acts" id="rActs"></div>
+</div>
+
+<div class="sheet" id="sSheet" role="dialog" aria-label="Game setup">
+  <div class="sh"><h2>Setup</h2><button class="tb" id="sClose">Close</button></div>
+  <form class="fs" id="sForm">
+    <label>Game type
+      <select id="gtype">
+        <option value="teams">Partners — 4 players, 2 teams</option>
+        <option value="s2">Singles — 2 players</option>
+        <option value="s3">Singles — 3 players</option>
+        <option value="s4">Singles — 4 players (cutthroat)</option>
+      </select>
+    </label>
+    <div class="g2" id="teamRow">
+      <label>Team 1 name<input type="text" id="t0" maxlength="20"></label>
+      <label>Team 2 name<input type="text" id="t1" maxlength="20"></label>
+    </div>
+    <fieldset>
+      <legend id="seatLegend">Seats</legend>
+      <div class="g2">
+        <label class="seat" id="sl0"><span></span><input type="text" id="p0" maxlength="16"></label>
+        <label class="seat" id="sl1"><span></span><input type="text" id="p1" maxlength="16"></label>
+        <label class="seat" id="sl2"><span></span><input type="text" id="p2" maxlength="16"></label>
+        <label class="seat" id="sl3"><span></span><input type="text" id="p3" maxlength="16"></label>
+      </div>
+      <label style="margin-top:10px">First dealer<select id="fd"></select></label>
+      <p class="note" id="deckNote"></p>
+    </fieldset>
+    <fieldset>
+      <legend>House rules</legend>
+      <div class="g2">
+        <label>Play to<input type="number" id="target" inputmode="numeric"></label>
+        <label>Lose at (if on)<input type="number" id="loseAt" inputmode="numeric"></label>
+        <label>Bags before penalty<input type="number" id="bagLimit" inputmode="numeric"></label>
+        <label>Bag penalty<input type="number" id="bagPenalty" inputmode="numeric"></label>
+        <label>Nil worth<input type="number" id="nil" inputmode="numeric"></label>
+        <label>Blind nil worth<input type="number" id="blind" inputmode="numeric"></label>
+      </div>
+      <label class="tog"><input type="checkbox" id="useLose"> Game ends when someone drops to the "lose at" score</label>
+      <label class="tog"><input type="checkbox" id="allowBlind"> Allow blind nil</label>
+      <label class="tog"><input type="checkbox" id="nilBags"> Tricks taken on a failed nil count as bags</label>
+    </fieldset>
+    <details>
+      <summary>How scoring works</summary>
+      <ul>
+        <li>Partners: team bid = both partners' bids added (nil bids don't count toward it). Singles: everyone scores for themselves.</li>
+        <li>Make the bid: 10 × bid, plus 1 point per extra trick (a bag).</li>
+        <li>Miss the bid: lose 10 × bid.</li>
+        <li>Nil: win or lose the nil value (blind nil: the blind value) depending on taking zero tricks.</li>
+        <li>Every time bags reach the limit, lose the penalty and bags reset.</li>
+        <li>Game ends when someone reaches the target (or drops to the lose-at score). Highest score wins; a tie at the top plays on.</li>
+        <li>2 players: draw-and-discard to 13 cards each, 13 tricks. 3 players: pull the 2♣, deal 17 each, 17 tricks.</li>
+      </ul>
+    </details>
+    <div class="acts"><button type="submit" class="pri">Save setup</button></div>
+  </form>
+</div>
+
+<div class="modal" id="modal"><div class="box"><p id="mMsg"></p><div class="acts"><button id="mNo">Cancel</button><button class="pri" id="mYes">OK</button></div></div></div>
+
+<script>
+{
+const KEY='spadesScorecard.v1';
+const DEF={mode:'teams',count:4,target:500,loseAt:-200,useLose:true,bagLimit:10,bagPenalty:100,nil:100,blind:200,allowBlind:true,nilBags:true};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fresh=()=>({settings:{...DEF},teams:['Spades','Diamonds'],players:['Player 1','Player 2','Player 3','Player 4'],firstDealer:0,rounds:[],pending:null});
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+const firstRun=!S;
+if(!S)S=fresh();
+S.settings={...DEF,...S.settings};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const SUITS=['♠','♥','♣','♦'];
+const N=()=>S.settings.mode==='teams'?4:S.settings.count;
+const handSize=n=>n===3?17:13;
+const H=()=>handSize(N());
+const isNil=b=>b==='N'||b==='B';
+const fmtBid=b=>b==null?'–':b==='N'?'Nil':b==='B'?'Blind':String(b);
+function sides(){
+  if(S.settings.mode==='teams')return [0,1].map(t=>({name:S.teams[t],sub:`${S.players[t]} & ${S.players[t+2]}`,m:[t,t+2],pip:t?'♦':'♠',red:!!t}));
+  return Array.from({length:N()},(_,p)=>({name:S.players[p],sub:`Seat ${p+1}`,m:[p],pip:SUITS[p],red:p%2===1}));
+}
+const sideOf=p=>S.settings.mode==='teams'?p%2:p;
+const inkOf=sd=>sd.red?'var(--red)':'var(--cardink)';
+const stripeOf=sd=>sd.red?'var(--red)':'var(--card)';
+
+function scoreSide(r,m,bagsBefore){
+  const st=S.settings;let bid=0,took=0,nilPts=0,nilTricks=0,made=null,newBags=0;
+  m.forEach(p=>{const b=r.bids[p],k=r.tricks[p]||0;
+    if(isNil(b)){const v=b==='B'?st.blind:st.nil;nilPts+=k===0?v:-v;nilTricks+=k}
+    else{bid+=b||0;took+=k}});
+  let pts=nilPts;
+  if(bid>0){if(took>=bid){made=true;pts+=10*bid+(took-bid);newBags=took-bid}else{made=false;pts-=10*bid}}
+  if(st.nilBags){pts+=nilTricks;newBags+=nilTricks}
+  let b=bagsBefore+newBags,penalty=0;
+  while(st.bagLimit>0&&b>=st.bagLimit){b-=st.bagLimit;penalty+=st.bagPenalty}
+  pts-=penalty;
+  return {pts,bagsAfter:b,penalty,made,tricks:took+nilTricks};
+}
+function compute(upTo){
+  const sd=sides(),n=upTo==null?S.rounds.length:upTo,tot=sd.map(()=>0),bags=sd.map(()=>0),rows=[];
+  for(let i=0;i<n;i++){const r=S.rounds[i];
+    rows.push(sd.map((s,k)=>{const x=scoreSide(r,s.m,bags[k]);tot[k]+=x.pts;bags[k]=x.bagsAfter;return {...x,total:tot[k]}}))}
+  return {tot,bags,rows};
+}
+function winner(c){
+  const st=S.settings,t=c.tot;
+  const ended=t.some(v=>v>=st.target)||(st.useLose&&t.some(v=>v<=st.loseAt));
+  if(!ended)return -1;
+  const mx=Math.max(...t);return t.filter(v=>v===mx).length>1?-1:t.indexOf(mx);
+}
+const dealerOf=i=>(S.firstDealer+i)%N();
+const bidOrder=i=>{const n=N(),d=dealerOf(i);return Array.from({length:n},(_,k)=>(d+k+1)%n)};
+function bidText(r,m){const parts=[];let n=0,any=false;
+  m.forEach(p=>{const b=r.bids[p];if(isNil(b))parts.push(b==='B'?'BN':'Nil');else if(b!=null){n+=b;any=true}});
+  return [any||!parts.length?String(n):'',...parts].filter(Boolean).join(' + ')}
+
+function render(){
+  const st=S.settings,sd=sides(),c=compute(),n=S.rounds.length,cnt=N();
+  const sorted=[...c.tot].sort((a,b)=>b-a),gap=sorted[0]-sorted[1];
+  const lead=gap>0&&n?c.tot.indexOf(sorted[0]):-1;
+  $('#modeLine').textContent=st.mode==='teams'?'Partners · 4 players':`Singles · ${cnt} players${cnt===3?' · 17 tricks a hand':''}`;
+  const tm=$('#teams');tm.style.setProperty('--cols',cnt===3?3:2);tm.className='teams'+(cnt===3?' c3':'');
+  tm.innerHTML=sd.map((s,k)=>{
+    const dots=st.bagLimit>0&&st.bagLimit<=15?Array.from({length:st.bagLimit},(_,i)=>`<span class="bag ${i<c.bags[k]?'on':''}"></span>`).join(''):'';
+    return `<div class="pc ${lead===k?'lead':''}" style="--c:${inkOf(s)}">
+      <span class="pip tl">${s.pip}</span><span class="pip br">${s.pip}</span>
+      <div class="tname">${esc(s.name)}</div><div class="tpl">${esc(s.sub)}</div>
+      <div class="score">${c.tot[k]}</div>
+      <div class="bags" aria-label="${c.bags[k]} bags">${dots}</div>
+      <div class="bagt">${c.bags[k]} bag${c.bags[k]===1?'':'s'}</div>
+      <div class="need">${c.tot[k]>=st.target?'Past the target':`${st.target-c.tot[k]} to go`}</div>
+      <div class="crown">Leading by ${gap}</div></div>`}).join('');
+  const w=winner(c);
+  $('#winBox').innerHTML=w<0?'':`<div class="win"><h2>${esc(sd[w].name)} ${st.mode==='teams'?'win':'wins'}</h2><div>${c.tot[w]} to ${[...c.tot].sort((a,b)=>b-a)[1]} after ${n} rounds</div><button class="go red" id="wNew">Rematch — same seats</button></div>`;
+  const d=dealerOf(n);
+  $('#deal').innerHTML=`<span>Round <b>${n+1}</b></span><span>Deals: <b>${esc(S.players[d])}</b></span><span>Bids first: <b>${esc(S.players[(d+1)%cnt])}</b></span>`;
+  const p=S.pending;
+  $('#pending').innerHTML=p?`<div class="panel"><h3>Bids in — hand in play</h3><div class="pb">${sd.map(s=>`<div style="color:${s.red?'#ffb3ad':'var(--card)'}"><b>${esc(s.name)}: ${esc(bidText(p,s.m))}</b>${s.m.length>1?'<br>'+s.m.map(q=>`${esc(S.players[q])} ${fmtBid(p.bids[q])}`).join(' · '):''}</div>`).join('')}</div></div>`:'';
+  const go=$('#go');go.textContent=p?'Enter tricks taken':`Bid round ${n+1}`;go.className='go'+(p?' red':'');
+  $('#lh').innerHTML=`<tr><th>#</th>${sd.map(s=>`<th>${esc(s.name)}</th>`).join('')}</tr>`;
+  $('#lb').innerHTML=c.rows.length?c.rows.map((row,i)=>`<tr data-r="${i}"><td>${i+1}</td>${row.map((x,k)=>`<td><span class="tot">${x.total}</span><small><span class="${x.pts<0?'neg':'pos'}">${x.pts>0?'+':''}${x.pts}</span> · ${esc(bidText(S.rounds[i],sd[k].m))}/${x.tricks}${x.penalty?` · −${x.penalty}`:''}</small></td>`).join('')}</tr>`).join('')
+    :`<tr><td colspan="${sd.length+1}" class="empty">No rounds yet. Tap the button above to enter the first bids.</td></tr>`;
+}
+
+/* ---------- round sheet ---------- */
+let E=null;
+const cells=()=>[...E.order.map(p=>({p,f:'bid'})),...E.order.map(p=>({p,f:'tricks'}))];
+const firstEmpty=()=>cells().find(c=>(c.f==='bid'?E.bids:E.tricks)[c.p]==null)||null;
+function openRound(idx){
+  const n=N(),blank=()=>Array(n).fill(null),src=idx!=null?S.rounds[idx]:S.pending;
+  E={idx,bids:src?[...src.bids]:blank(),tricks:src?[...src.tricks]:blank()};
+  E.ri=idx!=null?idx:S.rounds.length;E.order=bidOrder(E.ri);E.active=firstEmpty()||{p:E.order[0],f:'tricks'};
+  openSheet('#rSheet');renderRound();
+}
+function autofill(){
+  const empty=E.tricks.map((v,i)=>v==null?i:-1).filter(i=>i>=0);
+  if(empty.length===1){const s=E.tricks.reduce((a,v)=>a+(v||0),0);if(s<=H())E.tricks[empty[0]]=H()-s}
+}
+function press(k){
+  if(!E||!E.active)return;const {p,f}=E.active,arr=f==='bid'?E.bids:E.tricks;
+  if(k==='del'){arr[p]=null;renderRound();return}
+  if(k==='next'){const cs=cells(),i=cs.findIndex(c=>c.p===p&&c.f===f);E.active=cs[(i+1)%cs.length];renderRound();return}
+  const v=k==='N'||k==='B'?k:+k;if(typeof v==='number'&&v>H())return;
+  arr[p]=v;if(f==='tricks')autofill();
+  E.active=firstEmpty()||E.active;renderRound();
+}
+function renderRound(){
+  const st=S.settings,sd=sides(),h=H(),d=dealerOf(E.ri),a=E.active||{};
+  $('#rTitle').textContent=E.idx!=null?`Fix round ${E.idx+1}`:`Round ${E.ri+1}`;
+  $('#rRows').innerHTML=`<div class="rhead"><span>Player (bid order)</span><span>Bid</span><span>Took</span></div>`+E.order.map(p=>{const s=sd[sideOf(p)],b=E.bids[p];
+    return `<div class="prow" style="--c:${stripeOf(s)}"><div class="pn">${esc(S.players[p])}${p===d?'<i class="dl">D</i>':''}<small>${st.mode==='teams'?esc(s.name):s.pip}</small></div>
+    <button class="cell ${isNil(b)?'nil':''} ${a.p===p&&a.f==='bid'?'act':''}" data-c="${p}|bid">${fmtBid(b)}</button>
+    <button class="cell ${a.p===p&&a.f==='tricks'?'act':''}" data-c="${p}|tricks">${E.tricks[p]??'–'}</button></div>`}).join('');
+  const allBids=E.bids.every(b=>b!=null),allTr=E.tricks.every(v=>v!=null),sum=E.tricks.reduce((s,v)=>s+(v||0),0),ok=allBids&&allTr&&sum===h;
+  const before=compute(E.ri).bags,r={bids:E.bids,tricks:E.tricks};
+  $('#rSum').innerHTML=sd.map((s,k)=>{let line=`Bid <b>${esc(bidText(r,s.m))}</b>`;
+    if(ok){const x=scoreSide(r,s.m,before[k]);line+=` · took ${x.tricks}<br><b class="${x.pts<0?'neg':'pos'}">${x.pts>0?'+':''}${x.pts}</b>${x.penalty?` (bags −${x.penalty})`:''}${x.made===false?' · set':''}`}
+    return `<div style="--c:${stripeOf(s)}">${esc(s.name)}<br>${line}</div>`}).join('');
+  const bidTot=E.bids.reduce((s,b)=>s+(typeof b==='number'?b:0),0);
+  const tcEl=$('#rTc');tcEl.className='tc'+(allTr?(sum===h?' ok':' bad'):'');
+  tcEl.textContent=`Total bids ${bidTot} · tricks ${sum} of ${h}`+(allTr&&sum!==h?` — tricks must add to ${h}`:'');
+  $('#kLabel').textContent=E.active?`${a.f==='bid'?'Bid':'Tricks taken'} for ${S.players[a.p]}`:'';
+  const nums=from=>Array.from({length:h-from+1},(_,i)=>[i+from,i+from,'']);
+  const keys=a.f==='bid'
+    ?[['N','Nil','nilk'],...nums(1),st.allowBlind?['B','Blind nil','nilk']:['next','Next','alt'],['del','Clear','alt']]
+    :[...nums(0),['next','Next','alt'],['del','Clear','alt']];
+  $('#kp').innerHTML=keys.map(([k,l,c])=>`<button type="button" class="${c}" data-k="${k}">${l}</button>`).join('');
+  $('#rActs').innerHTML=E.idx!=null
+    ?`<button class="dang" data-a="del">Delete round</button><button class="pri" data-a="score" ${ok?'':'disabled'}>Save changes</button>`
+    :`<button data-a="bids" ${allBids?'':'disabled'}>Save bids, play hand</button><button class="pri" data-a="score" ${ok?'':'disabled'}>Score round</button>`;
+}
+function roundAction(a){
+  const r={bids:[...E.bids],tricks:[...E.tricks]};
+  if(a==='bids'){S.pending=r;done();return}
+  if(a==='score'){if(E.idx!=null)S.rounds[E.idx]=r;else{S.rounds.push(r);S.pending=null}done();return}
+  if(a==='del'){const i=E.idx;ask(`Delete round ${i+1}? Scores after it will recalculate.`,'Delete',()=>{S.rounds.splice(i,1);done()})}
+}
+function done(){save();closeSheets();render()}
+
+/* ---------- setup ---------- */
+const numK=['target','loseAt','bagLimit','bagPenalty','nil','blind'],boolK=['useLose','allowBlind','nilBags'];
+const gtOf=st=>st.mode==='teams'?'teams':'s'+st.count;
+function setupLayout(){
+  const gt=$('#gtype').value,teams=gt==='teams',n=teams?4:+gt.slice(1);
+  $('#teamRow').hidden=!teams;
+  $('#seatLegend').textContent=teams?'Seats (partners sit across)':'Players, in seat order';
+  [0,1,2,3].forEach(p=>{const l=$('#sl'+p);l.hidden=p>=n;l.style.setProperty('--c',(teams?p%2:p%2)?'var(--red)':'var(--card)');
+    l.querySelector('span').textContent=teams?`Seat ${p+1} · Team ${p%2+1}`:`Seat ${p+1} ${SUITS[p]}`});
+  const cur=+$('#fd').value||0;
+  $('#fd').innerHTML=Array.from({length:n},(_,i)=>`<option value="${i}" ${i===Math.min(cur,n-1)?'selected':''}>Seat ${i+1} · ${esc($('#p'+i).value||`Player ${i+1}`)}</option>`).join('');
+  $('#deckNote').textContent=n===3?'3 players: pull the 2♣ so it deals out 17 cards each — 17 tricks a hand.':n===2?'2 players: draw-and-discard until each holds 13 — 13 tricks a hand.':'Full deck, 13 tricks a hand.';
+}
+function openSetup(){
+  const st=S.settings;$('#gtype').value=gtOf(st);
+  [0,1].forEach(t=>$('#t'+t).value=S.teams[t]);[0,1,2,3].forEach(p=>$('#p'+p).value=S.players[p]);
+  $('#fd').innerHTML=`<option value="${S.firstDealer}"></option>`;$('#fd').value=S.firstDealer;
+  numK.forEach(k=>$('#'+k).value=st[k]);boolK.forEach(k=>$('#'+k).checked=st[k]);
+  setupLayout();openSheet('#sSheet');
+}
+$('#gtype').addEventListener('change',setupLayout);
+$('#sForm').addEventListener('submit',e=>{e.preventDefault();
+  const gt=$('#gtype').value,changed=gt!==gtOf(S.settings);
+  const apply=()=>{
+    S.settings.mode=gt==='teams'?'teams':'singles';S.settings.count=gt==='teams'?4:+gt.slice(1);
+    [0,1].forEach(t=>S.teams[t]=$('#t'+t).value.trim()||`Team ${t+1}`);
+    [0,1,2,3].forEach(p=>S.players[p]=$('#p'+p).value.trim()||`Player ${p+1}`);
+    S.firstDealer=Math.min(+$('#fd').value||0,N()-1);
+    numK.forEach(k=>{const v=parseInt($('#'+k).value,10);S.settings[k]=Number.isFinite(v)?v:DEF[k]});
+    boolK.forEach(k=>S.settings[k]=$('#'+k).checked);
+    if(changed){S.rounds=[];S.pending=null}
+    done()};
+  if(changed&&(S.rounds.length||S.pending))ask('Switching game type starts a new game. Clear the current scores?','Switch',apply);else apply()});
+
+/* ---------- plumbing ---------- */
+function openSheet(id){$('#scrim').classList.add('on');$(id).classList.add('on')}
+function closeSheets(){$('#scrim').classList.remove('on');document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));E=null}
+let mFn=null;
+function ask(msg,yes,fn){$('#mMsg').textContent=msg;$('#mYes').textContent=yes;mFn=fn;$('#modal').classList.add('on')}
+$('#mNo').onclick=()=>{$('#modal').classList.remove('on');mFn=null};
+$('#mYes').onclick=()=>{$('#modal').classList.remove('on');const f=mFn;mFn=null;f&&f()};
+function newGame(){S.rounds=[];S.pending=null;done()}
+$('#bNew').onclick=()=>ask('Start a new game? Names and house rules stay; scores clear.','New game',newGame);
+$('#bSetup').onclick=openSetup;
+$('#go').onclick=()=>openRound(null);
+$('#winBox').addEventListener('click',e=>{if(e.target.id==='wNew')newGame()});
+$('#lb').addEventListener('click',e=>{const tr=e.target.closest('tr[data-r]');if(tr)openRound(+tr.dataset.r)});
+$('#scrim').onclick=closeSheets;$('#rClose').onclick=closeSheets;$('#sClose').onclick=closeSheets;
+$('#rRows').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const [p,f]=b.dataset.c.split('|');E.active={p:+p,f};renderRound()});
+$('#kp').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(b)press(b.dataset.k)});
+$('#rActs').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b&&!b.disabled)roundAction(b.dataset.a)});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeSheets();$('#modal').classList.remove('on');return}
+  if(!E||!$('#rSheet').classList.contains('on'))return;
+  if(e.key==='Backspace'){press('del');e.preventDefault()}else if(e.key==='Tab'){press('next');e.preventDefault()}
+  else if(/^[0-9]$/.test(e.key)){const v=+e.key;if(E.active&&E.active.f==='bid'&&v===0)press('N');else press(String(v))}
+});
+render();
+if(firstRun)openSetup();
+}
+</script>
+</body>
+</html>
